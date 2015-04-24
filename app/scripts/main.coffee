@@ -1,52 +1,95 @@
-randomBit = ->
-    if Math.random() < 0.3 then 1 else 0
+class Automaton
+    constructor: (n, m) ->
+        @n = n
+        @m = m
+        @grid = []
+        @neighbors = []
+        for i in [0..n-1]
+            row = (0 for j in [0..m-1])
+            @grid.push(row)
+            @neighbors.push(row.slice())
 
-sum = (list) -> 
-    _.reduce list, ((memo, num) -> memo + num), 0
+    randomize: ->
+        for i in [0..@n-1]
+            row = @grid[i]
+            for j in [0..@m-1]
+                row[j] = if Math.random() < 0.3 then 1 else 0
+   
+    updateNeighbors: ->
+        for i in [0..@n-1]
+            for j in [0..@m-1]
+                neighbors = 0
+                if i > 0
+                    if @grid[i-1][j] is 1 then neighbors++
+                    if j > 0
+                        if @grid[i-1][j-1] is 1 then neighbors++
+                        if @grid[i][j-1] is 1 then neighbors++
+                    if j < @m-1
+                        if @grid[i-1][j+1] is 1 then neighbors++
+                        if @grid[i][j+1] is 1 then neighbors++
+                if i < @n-1
+                    if @grid[i+1][j] is 1 then neighbors++
+                    if j > 0
+                        if @grid[i+1][j-1] is 1 then neighbors++
+                    if j < @m-1
+                        if @grid[i+1][j+1] is 1 then neighbors++
+                @neighbors[i][j] = neighbors 
 
-window.makeGrid = (n) -> 
-    mygrid = []
-    for i in [0..n-1]
-        row = (0 for j in [0..n-1])
-        mygrid.push(row)
-    mygrid
+    step: (f) ->
+        for i in [0..@n-1]
+            for j in [0..@m-1]
+                state = @grid[i][j]
+                neighbors = @neighbors[i][j]
+                @grid[i][j] = (f state, neighbors)
 
-randomizeGrid = (grid) ->
-    N = grid.length
-    for i in [0..N-1]
-        row = grid[i]
-        for j in [0..N-1]
-            row[j] = randomBit()
-    grid
+draw = (canvas, automaton) ->
+    wCell = width / automaton.n
+    hCell = height / automaton.m
+    for i in [0..automaton.n-1]
+        row = automaton.grid[i]
+        for j in [0..automaton.m-1]
+            e = row[j]
+            if e is 1
+                ctx.rect i * wCell, j * hCell, wCell, hCell
+ 
+rule1 = (state, neighbors) ->
+    alive = (state is 1)
+    if alive 
+        if (neighbors is 2 or neighbors is 3) then 1 else 0
+    else
+        if (neighbors is 3) then 1 else 0
 
-getNeighborhood = (grid, i, j) ->
-    neighborhood = makeGrid 3
-    N = grid.length
-    neighborhood[1][1] = grid[i][j]
-    if i > 0
-        neighborhood[0][1] = grid[i-1][j]
-        if j > 0
-            neighborhood[0][0] = grid[i-1][j-1]
-            neighborhood[1][0] = grid[i][j-1]
-        if j < N-1
-            neighborhood[0][2] = grid[i-1][j+1]
-            neighborhood[1][2] = grid[i][j+1]
-    if i < N-1
-        neighborhood[2][1] = grid[i+1][j]
-        if j > 0
-            neighborhood[2][0] = grid[i+1][j-1]
-        if j < N-1
-            neighborhood[2][2] = grid[i+1][j+1]
-    neighborhood
+width = 400
+height = 400
+canvas = document.createElement('canvas')
+canvas.width = width
+canvas.height = height 
+container = document.getElementById('main')
+container.appendChild(canvas)
+ctx = canvas.getContext '2d'
+ctx.fillStyle = 'red'
 
-step = (grid, f) -> 
-    N = grid.length
-    tempGrid = makeGrid N
-    for i in [0..N-1]
-        for j in [0..N-1]
-            neighb = getNeighborhood grid, i, j
-            tempGrid[i][j] = if (f neighb) then 1 else 0
-    tempGrid
+a = new Automaton 80, 80
+a.randomize()
+a.updateNeighbors()
+
+play = ->
+    ctx.clearRect(0, 0, width, height)
+    ctx.beginPath()
+    draw canvas, a
+    ctx.fill()
+    a.step rule1
+    a.updateNeighbors()
+
+setInterval play, 80
+
+#imageData = ctx.getImageData(0, 0, width, height);
+#draw = (canvas, grid) ->
+    #mygrid = _.flatten grid
+    #_.each mygrid, (e, i) ->
+    #    imageData.data[4 * i] = e * 255
+    #    imageData.data[4 * i + 3] = 255
+    #ctx.putImageData(imageData, 10, 10)
 
 stringify = (grid) ->
     _.reduce grid, ((memo, row) -> 
@@ -55,40 +98,3 @@ stringify = (grid) ->
             memo += c
         memo += '\n'), ''
 
-draw = (canvas, grid) ->
-    N = grid.length
-    w = 600
-    h = 600
-    wCell = w / N
-    hCell = h / N
-    for i in [0..N-1]
-        row = grid[i]
-        for j in [0..N-1]
-            e = row[j]
-            if e is 1
-                ctx.rect i * wCell, j * hCell, wCell, hCell
- 
-rule1 = (neighborhood) ->
-    center = neighborhood[1][1]
-    alive = center is 1
-    numNeighbors = _.reduce neighborhood, 
-        ((memo, row) -> memo += (sum row)), 0
-    numNeighbors -= center
-    if alive 
-        (numNeighbors is 2 or numNeighbors is 3)
-    else
-        (numNeighbors is 3)
-
-canvas = document.querySelector('canvas')
-ctx = canvas.getContext '2d'
-ctx.fillStyle = 'red'
-grid = randomizeGrid makeGrid 300
-
-play = ->
-    ctx.clearRect(0, 0, 600, 600)
-    ctx.beginPath()
-    draw canvas, grid
-    grid = step grid, rule1
-    ctx.fill()
-
-setInterval play, 200
