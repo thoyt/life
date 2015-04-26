@@ -84,7 +84,6 @@ class FractalAutomaton
     rule: (state, neighbors) ->
         if neighbors in [5, 7, 8, 10, 11, 12] then 1 else 0
 
-
 class Automaton
     constructor: (n, m) ->
         @n = n
@@ -129,6 +128,13 @@ class Automaton
                 neighbors = @neighbors[i][j]
                 @grid[i][j] = (f state, neighbors)
 
+    rule: (state, neighbors) ->
+        alive = (state is 1)
+        if alive 
+            if (neighbors is 2 or neighbors is 3) then 1 else 0
+        else
+            if (neighbors is 3) then 1 else 0
+
 
 draw = (canvas, automaton) ->
     dim = pow 2, automaton.depth
@@ -141,8 +147,8 @@ draw = (canvas, automaton) ->
             if e is 1
                 ctx.rect i * wCell, j * hCell, wCell, hCell
  
-width = 800
-height = 800
+width = 600
+height = 600
 canvas = document.createElement('canvas')
 canvas.width = width
 canvas.height = height 
@@ -151,7 +157,7 @@ container.appendChild(canvas)
 ctx = canvas.getContext '2d'
 ctx.fillStyle = 'red'
 
-f = new FractalAutomaton 8
+f = new FractalAutomaton 9
 f.randomize 0.23
 f.updateNeighbors()
 
@@ -163,33 +169,18 @@ play = ->
     f.step f.rule
     f.updateNeighbors() 
 
-setInterval play, 80
-
-#a = new Automaton 100,100
+#a = new Automaton 150, 150
 #a.randomize()
 #a.updateNeighbors()
-
+#
 #play = ->
 #    ctx.clearRect(0, 0, width, height)
 #    ctx.beginPath()
 #    draw canvas, a
 #    ctx.fill()
-#    a.step rule1
+#    a.step a.rule
 #    a.updateNeighbors()
-
-#imageData = ctx.getImageData(0, 0, width, height);
-#draw = (canvas, grid) ->
-    #mygrid = _.flatten grid
-    #_.each mygrid, (e, i) ->
-    #    imageData.data[4 * i] = e * 255
-    #    imageData.data[4 * i + 3] = 255
-    #ctx.putImageData(imageData, 10, 10)
-#stringify = (grid) ->
-#    _.reduce grid, ((memo, row) -> 
-#        for e in row
-#            c = if e is 1 then '@ ' else '. '
-#            memo += c
-#        memo += '\n'), ''
+#
 #draw = (canvas, automaton) ->
 #    wCell = width / automaton.n
 #    hCell = height / automaton.m
@@ -199,11 +190,21 @@ setInterval play, 80
 #            e = row[j]
 #            if e is 1
 #                ctx.rect i * wCell, j * hCell, wCell, hCell
-# 
-#rule1 = (state, neighbors) ->
-#    alive = (state is 1)
-#    if alive 
-#        if (neighbors is 2 or neighbors is 3) then 1 else 0
-#    else
-#        if (neighbors is 3) then 1 else 0
+ 
+setInterval play, 80
 
+#stringify = (grid) ->
+#    _.reduce grid, ((memo, row) -> 
+#        for e in row
+#            c = if e is 1 then '@ ' else '. '
+#            memo += c
+#        memo += '\n'), ''
+#
+#imageData = ctx.getImageData(0, 0, width, height);
+#
+#draw = (canvas, grid) ->
+#    mygrid = _.flatten grid
+#    _.each mygrid, (e, i) ->
+#        imageData.data[4 * i] = e * 255
+#        imageData.data[4 * i + 3] = 255
+#    ctx.putImageData(imageData, 10, 10)
