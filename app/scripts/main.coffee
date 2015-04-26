@@ -45,31 +45,33 @@ class FractalAutomaton
             
             for i in [0..dim-1] 
                 for j in [0..dim-1]
-                    nbrs = 0
+                    pnbrs = 0
                     ip0 = floor i / 2
                     jp0 = floor j / 2
                     ip1 = if i % 2 is 0 then ip0 - 1 else ip0 + 1
                     jp1 = if j % 2 is 0 then jp0 - 1 else jp0 + 1
                     ip1 = (dimParent + ip1) %% dimParent
                     jp1 = (dimParent + jp1) %% dimParent
-                    nbrs += gParent[ip0][jp0] + gParent[ip1][jp0]
-                    nbrs += gParent[ip0][jp1] + gParent[ip1][jp1]
+                    pnbrs += gParent[ip0][jp0] + gParent[ip1][jp0]
+                    pnbrs += gParent[ip0][jp1] + gParent[ip1][jp1]
 
+                    cnbrs = 0 
                     if (d < @depth)
                         ic0 = 2 * i
                         jc0 = 2 * j
-                        nbrs += gChild[ic0][jc0] + gChild[ic0 + 1][jc0]
-                        nbrs += gChild[ic0][jc0 + 1] + gChild[ic0 + 1][jc0 + 1]
+                        cnbrs += gChild[ic0][jc0] + gChild[ic0 + 1][jc0]
+                        cnbrs += gChild[ic0][jc0 + 1] + gChild[ic0 + 1][jc0 + 1]
                    
                     iminus1 = (i - 1 + dim) %% dim
                     iplus1 = (i + 1 + dim) %% dim
                     jminus1 = (j - 1 + dim) %% dim
                     jplus1 = (j + 1 + dim) %% dim
+                    nbrs = 0
                     nbrs += gLocal[iminus1][jminus1] + gLocal[iminus1][j] + gLocal[iminus1][jplus1]
                     nbrs += gLocal[i][jminus1] + gLocal[i][jplus1]
                     nbrs += gLocal[iplus1][jminus1] + gLocal[iplus1][j] + gLocal[iplus1][jplus1]
   
-                    @neighbors[d][i][j] = nbrs 
+                    @neighbors[d][i][j] = { 'nbrs': nbrs, 'cnbrs': cnbrs, 'pnbrs': pnbrs }
 
     step: (f) ->
         for d in [1..@depth]
@@ -81,8 +83,63 @@ class FractalAutomaton
                     @grid[d][i][j] = (f state, neighbors)
 
                      
-    rule: (state, neighbors) ->
-        if neighbors in [5, 7, 8, 10, 11, 12] then 1 else 0
+    rule0: (state, neighbors) ->
+        n = neighbors.nbrs
+        if state is 1
+            if n in [2, 3] then 1 else 0
+        else
+            if n in [3] then 1 else 0
+
+    rule1: (state, neighbors) ->
+        n = neighbors.pnbrs + neighbors.cnbrs + neighbors.nbrs
+        if n in [5, 7, 8, 10, 11, 12] then 1 else 0
+
+    rule2: (state, neighbors) ->
+        n = neighbors.pnbrs + neighbors.cnbrs
+        if n in [3, 4, 5, 6, 7, 8, 10, 11] then 1 else 0
+
+    rule3: (state, neighbors) ->
+        n = neighbors.pnbrs + neighbors.nbrs
+        if n in [4, 5, 6, 7, 8, 9, 10, 11] then 1 else 0
+ 
+    rule4: (state, neighbors) ->
+        n = neighbors.pnbrs
+        if n in [2, 3] then 1 else 0
+
+    rule5: (state, neighbors) ->
+        n = neighbors.pnbrs
+        if n in [1, 4] then 1 else 0
+
+    rule6: (state, neighbors) ->
+        n = neighbors.pnbrs + neighbors.nbrs + neighbors.cnbrs
+        if n in [5, 6, 9, 11, 12, 13, 14] then 1 else 0
+
+    rule7: (state, neighbors) ->
+        if neighbors.pnbrs in [0, 2] then 1 else 0
+
+    rule8: (state, neighbors) -> # @randomize 0.0001
+        n = neighbors.pnbrs + neighbors.nbrs
+        if n in [0, 2, 5, 7, 8, 9, 12] then 1 else 0
+
+    ruleRandomParents: (k) ->
+        @arr = []
+        for i in [0..12]
+            if rand() < k
+                @arr.push(i)
+        rule = (state, neighbors) =>
+            n = neighbors.pnbrs + neighbors.nbrs 
+            if n in @arr then 1 else 0
+        rule
+
+    ruleRandom: (k) ->
+        @arr = []
+        for i in [0..16]
+            if rand() < k
+                @arr.push(i)
+        rule = (state, neighbors) =>
+            n = neighbors.pnbrs + neighbors.nbrs + neighbors.cnbrs
+            if n in @arr then 1 else 0
+        rule
 
 class Automaton
     constructor: (n, m) ->
@@ -147,64 +204,65 @@ draw = (canvas, automaton) ->
             if e is 1
                 ctx.rect i * wCell, j * hCell, wCell, hCell
  
-width = 600
-height = 600
-canvas = document.createElement('canvas')
-canvas.width = width
-canvas.height = height 
-container = document.getElementById('main')
-container.appendChild(canvas)
-ctx = canvas.getContext '2d'
-ctx.fillStyle = 'red'
+width = 800
+height = 800
+stage = new PIXI.Stage 0x66FF99
+renderer = PIXI.autoDetectRenderer width, height
+renderer.view.style.width = window.innerWidth + "px"
+renderer.view.style.height = window.innerHeight + "px"
+container = document.querySelector 'body'
+container.appendChild renderer.view
 
-f = new FractalAutomaton 9
-f.randomize 0.23
-f.updateNeighbors()
+params = 
+    density: 0.25
+    depth: 7
+    rate: 1000
+    rule: 'rule1'
+    render: ->
+        clearInterval(window.interval)
+        render()
 
-play = ->
-    ctx.clearRect(0, 0, width, height)
-    ctx.beginPath()
-    draw canvas, f
-    ctx.fill()
-    f.step f.rule
-    f.updateNeighbors() 
+gui = new dat.GUI()
+gui.add(params, 'density', 0, 0.4).step(0.001)
+gui.add(params, 'depth', 2, 10).step(1)
+gui.add(params, 'rule', ['rule0', 'rule1', 'rule2', 'rule3', 'rule4', 'rule5', 'rule6', 'rule7', 'rule8', 'random'])
+gui.add(params, 'rate', 20, 4000)
+gui.add(params, 'render')
 
-#a = new Automaton 150, 150
-#a.randomize()
-#a.updateNeighbors()
-#
-#play = ->
-#    ctx.clearRect(0, 0, width, height)
-#    ctx.beginPath()
-#    draw canvas, a
-#    ctx.fill()
-#    a.step a.rule
-#    a.updateNeighbors()
-#
-#draw = (canvas, automaton) ->
-#    wCell = width / automaton.n
-#    hCell = height / automaton.m
-#    for i in [0..automaton.n-1]
-#        row = automaton.grid[i]
-#        for j in [0..automaton.m-1]
-#            e = row[j]
-#            if e is 1
-#                ctx.rect i * wCell, j * hCell, wCell, hCell
- 
-setInterval play, 80
+graphics = new PIXI.Graphics()
+graphics.beginFill 0xFF0000, 1.0
 
-#stringify = (grid) ->
-#    _.reduce grid, ((memo, row) -> 
-#        for e in row
-#            c = if e is 1 then '@ ' else '. '
-#            memo += c
-#        memo += '\n'), ''
-#
-#imageData = ctx.getImageData(0, 0, width, height);
-#
-#draw = (canvas, grid) ->
-#    mygrid = _.flatten grid
-#    _.each mygrid, (e, i) ->
-#        imageData.data[4 * i] = e * 255
-#        imageData.data[4 * i + 3] = 255
-#    ctx.putImageData(imageData, 10, 10)
+stage.addChild graphics
+
+draw = (automaton) ->
+    dim = pow 2, automaton.depth
+    wCell = width / dim
+    hCell = height / dim
+    for i in [0..dim-1]
+        row = automaton.grid[automaton.depth][i]
+        for j in [0..dim-1]
+            e = row[j]
+            if e is 1
+                #graphics.drawCircle i * wCell, j * hCell, hCell / 1.5
+                graphics.drawRect i * wCell, j * hCell, wCell, hCell
+    
+do render = ->
+    f = new FractalAutomaton params.depth
+    f.randomize params.density
+    f.updateNeighbors()
+    
+    if params.rule is 'random'
+        rule = f.ruleRandomParents(0.2)
+        console.log rule
+    else
+        rule = f[params.rule]
+    
+    play = ->
+        draw f
+        f.step rule
+        f.updateNeighbors() 
+        renderer.render(stage)
+        graphics.clear()
+        graphics.beginFill(0xFF0000, 1.0)
+    
+    window.interval = setInterval play, params.rate
