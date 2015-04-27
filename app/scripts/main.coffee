@@ -17,6 +17,11 @@ class FractalAutomaton
                 @grid[d].push row
                 @neighbors[d].push row.slice()
 
+        @sumParents = yes
+        @sumLocal = yes
+        @sumChildren = yes
+        @ruleArray = [5, 7, 8, 10, 11, 12]
+
     randomize: (k) ->
         for d in [1..@depth]
             g = @grid[d]
@@ -73,125 +78,96 @@ class FractalAutomaton
   
                     @neighbors[d][i][j] = { 'nbrs': nbrs, 'cnbrs': cnbrs, 'pnbrs': pnbrs }
 
-    step: (f) ->
+    step: ->
         for d in [1..@depth]
             dim = pow 2, d
             for i in [0..dim-1]
                 for j in [0..dim-1]
                     state = @grid[d][i][j]
                     neighbors = @neighbors[d][i][j]
-                    @grid[d][i][j] = (f state, neighbors)
+                    @grid[d][i][j] = (@rule state, neighbors)
 
-                     
+    rule: (state, neighbors) ->
+        n = 0
+        if @sumParents
+            n += neighbors.pnbrs
+        if @sumLocal
+            n += neighbors.nbrs
+        if @sumChildren
+            n+= neighbors.cnbrs
+        if n in @ruleArray then 1 else 0
+
+    setRule: (rule) ->
+        @sumParents = rule.sumParents
+        @sumLocal = rule.sumLocal
+        @sumChildren = rule.sumChildren
+        @ruleArray = rule.ruleArray
+        # materialize rule here for performance? how
+        # @rule = ..
+
+    rulePresets:
+        rule1:
+            sumParents: yes
+            sumLocal: yes
+            sumChildren: yes
+            ruleArray: [5, 7, 8, 10, 11, 12]
+        rule2:
+            sumParents: yes
+            sumLocal: no
+            sumChildren: yes
+            ruleArray: [3, 4, 5, 6, 7, 8, 10, 11] 
+        rule3:
+            sumParents: yes
+            sumLocal: yes
+            sumChildren: no
+            ruleArray: [4, 5, 6, 7, 8, 9, 10, 11]
+        rule4:
+            sumParents: yes
+            sumLocal: no
+            sumChildren: no
+            ruleArray: [2, 3]
+        rule5:
+            sumParents: yes
+            sumLocal: no
+            sumChildren: no
+            ruleArray: [1, 4]
+        rule6:
+            sumParents: yes
+            sumLocal: yes
+            sumChildren: yes
+            ruleArray: [5, 6, 9, 11, 12, 13, 14]
+        rule7:
+            sumParents: yes
+            sumLocal: no
+            sumChildren: no
+            ruleArray: [0, 2]
+        rule8:
+            sumParents: yes
+            sumLocal: yes
+            sumChildren: no
+            ruleArray: [0, 2, 5, 7, 8, 9, 12]
+        rule9:
+            sumParents: yes
+            sumLocal: yes
+            sumChildren: no
+            ruleArray: [0, 3, 12] 
+        rule10:
+            sumParents: yes
+            sumLocal: yes
+            sumChildren: no
+            ruleArray: [2, 6] 
+        rule11:
+            sumParents: yes
+            sumLocal: yes
+            sumChildren: no
+            ruleArray: [1, 10] 
+
     rule0: (state, neighbors) ->
         n = neighbors.nbrs
         if state is 1
             if n in [2, 3] then 1 else 0
         else
             if n in [3] then 1 else 0
-
-    rule1: (state, neighbors) ->
-        n = neighbors.pnbrs + neighbors.cnbrs + neighbors.nbrs
-        if n in [5, 7, 8, 10, 11, 12] then 1 else 0
-
-    rule2: (state, neighbors) ->
-        n = neighbors.pnbrs + neighbors.cnbrs
-        if n in [3, 4, 5, 6, 7, 8, 10, 11] then 1 else 0
-
-    rule3: (state, neighbors) ->
-        n = neighbors.pnbrs + neighbors.nbrs
-        if n in [4, 5, 6, 7, 8, 9, 10, 11] then 1 else 0
- 
-    rule4: (state, neighbors) ->
-        n = neighbors.pnbrs
-        if n in [2, 3] then 1 else 0
-
-    rule5: (state, neighbors) ->
-        n = neighbors.pnbrs
-        if n in [1, 4] then 1 else 0
-
-    rule6: (state, neighbors) ->
-        n = neighbors.pnbrs + neighbors.nbrs + neighbors.cnbrs
-        if n in [5, 6, 9, 11, 12, 13, 14] then 1 else 0
-
-    rule7: (state, neighbors) ->
-        if neighbors.pnbrs in [0, 2] then 1 else 0
-
-    rule8: (state, neighbors) -> # @randomize 0.0001
-        n = neighbors.pnbrs + neighbors.nbrs
-        if n in [0, 2, 5, 7, 8, 9, 12] then 1 else 0
-
-    ruleRandomParents: (k) ->
-        @arr = []
-        for i in [0..12]
-            if rand() < k
-                @arr.push(i)
-        rule = (state, neighbors) =>
-            n = neighbors.pnbrs + neighbors.nbrs 
-            if n in @arr then 1 else 0
-        rule
-
-    ruleRandom: (k) ->
-        @arr = []
-        for i in [0..16]
-            if rand() < k
-                @arr.push(i)
-        rule = (state, neighbors) =>
-            n = neighbors.pnbrs + neighbors.nbrs + neighbors.cnbrs
-            if n in @arr then 1 else 0
-        rule
-
-class Automaton
-    constructor: (n, m) ->
-        @n = n
-        @m = m
-        @grid = []
-        @neighbors = []
-        for i in [0..n-1]
-            row = (0 for j in [0..m-1])
-            @grid.push(row)
-            @neighbors.push(row.slice())
-
-    randomize: ->
-        for i in [0..@n-1]
-            row = @grid[i]
-            for j in [0..@m-1]
-                row[j] = if rand() < 0.3 then 1 else 0
-   
-    updateNeighbors: ->
-        for i in [0..@n-1]
-            for j in [0..@m-1]
-                neighbors = 0
-                if i > 0
-                    if @grid[i-1][j] is 1 then neighbors++
-                    if j > 0
-                        if @grid[i-1][j-1] is 1 then neighbors++
-                        if @grid[i][j-1] is 1 then neighbors++
-                    if j < @m-1
-                        if @grid[i-1][j+1] is 1 then neighbors++
-                        if @grid[i][j+1] is 1 then neighbors++
-                if i < @n-1
-                    if @grid[i+1][j] is 1 then neighbors++
-                    if j > 0
-                        if @grid[i+1][j-1] is 1 then neighbors++
-                    if j < @m-1
-                        if @grid[i+1][j+1] is 1 then neighbors++
-                @neighbors[i][j] = neighbors 
-
-    step: (f) ->
-        for i in [0..@n-1]
-            for j in [0..@m-1]
-                state = @grid[i][j]
-                neighbors = @neighbors[i][j]
-                @grid[i][j] = (f state, neighbors)
-
-    rule: (state, neighbors) ->
-        alive = (state is 1)
-        if alive 
-            if (neighbors is 2 or neighbors is 3) then 1 else 0
-        else
-            if (neighbors is 3) then 1 else 0
-
 
 draw = (canvas, automaton) ->
     dim = pow 2, automaton.depth
@@ -218,14 +194,58 @@ params =
     depth: 7
     rate: 1000
     rule: 'rule1'
+    customRule:
+        sumParents: true
+        sumLocal: true
+        sumChildren: true
+        array: "[1,2,3,4]"
     render: ->
         clearInterval(window.interval)
         render()
 
+window.generateCustomRule = (sumParents, sumLocal, sumChildren, rule) ->
+    newRule = (state, neighbors) =>
+        n = 0
+        if sumParents
+            n += neighbors.pnbrs
+        if sumLocal
+            n += neighbors.nbrs
+        if sumChildren
+            n += neighbors.cnbrs
+        if n in rule then 1 else 0
+
+rules = [
+    'rule1', 
+    'rule2', 
+    'rule3', 
+    'rule4', 
+    'rule5', 
+    'rule6', 
+    'rule7', 
+    'rule8', 
+    'rule9', 
+    'rule10', 
+    'rule11',
+    'custom'
+]
+
+densityChoices = 
+    'super tiny': 0.0001
+    'tiny': 0.001
+    'small': 0.01
+    'medium': 0.1
+    'large': 0.25
+    'xlarge': 0.4
+
 gui = new dat.GUI()
-gui.add(params, 'density', 0, 0.4).step(0.001)
-gui.add(params, 'depth', 2, 10).step(1)
-gui.add(params, 'rule', ['rule0', 'rule1', 'rule2', 'rule3', 'rule4', 'rule5', 'rule6', 'rule7', 'rule8', 'random'])
+gui.add(params, 'density', densityChoices)
+gui.add(params, 'depth', 5, 11).step(1)
+gui.add(params, 'rule', rules)
+f1 = gui.addFolder('custom rule')
+f1.add(params.customRule, 'sumParents').name('sum parents')
+f1.add(params.customRule, 'sumLocal').name('sum local')
+f1.add(params.customRule, 'sumChildren').name('sum children')
+f1.add(params.customRule, 'array').name('array')
 gui.add(params, 'rate', 20, 4000)
 gui.add(params, 'render')
 
@@ -243,23 +263,26 @@ draw = (automaton) ->
         for j in [0..dim-1]
             e = row[j]
             if e is 1
-                #graphics.drawCircle i * wCell, j * hCell, hCell / 1.5
                 graphics.drawRect i * wCell, j * hCell, wCell, hCell
-    
+
 do render = ->
     f = new FractalAutomaton params.depth
     f.randomize params.density
     f.updateNeighbors()
     
-    if params.rule is 'random'
-        rule = f.ruleRandomParents(0.2)
-        console.log rule
+    if params.rule is 'custom' 
+        rule = 
+            sumParents: params.customRule.sumParents
+            sumLocal: params.customRule.sumLocal
+            sumChildren: params.customRule.sumChildren
+            ruleArray: JSON.parse(params.customRule.array)
     else
-        rule = f[params.rule]
-    
+        rule = f.rulePresets[params.rule]
+    f.setRule rule
+
     play = ->
         draw f
-        f.step rule
+        f.step()
         f.updateNeighbors() 
         renderer.render(stage)
         graphics.clear()
