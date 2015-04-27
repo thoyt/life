@@ -356,7 +356,7 @@ module.exports = function (grunt) {
         commit: true,
         push: true,
         message: 'Built %sourceName% from commit %sourceCommit% on branch %sourceBranch%'
-      },  
+      },
       pages: {
         options: {
           remote: 'git@github.com:thoyt/life.git',
