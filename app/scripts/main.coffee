@@ -113,9 +113,9 @@ class FractalAutomaton
             ruleArray: [5, 7, 8, 10, 11, 12]
         rule2:
             sumParents: yes
-            sumLocal: no
+            sumLocal: yes
             sumChildren: yes
-            ruleArray: [3, 4, 5, 6, 7, 8, 10, 11] 
+            ruleArray: [2, 6, 8, 11]
         rule3:
             sumParents: yes
             sumLocal: yes
@@ -191,8 +191,8 @@ container.appendChild renderer.view
 
 params = 
     density: 0.25
-    depth: 7
-    rate: 1000
+    depth: 8
+    rate: 200
     rule: 'rule1'
     customRule:
         sumParents: true
