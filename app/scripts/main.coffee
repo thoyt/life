@@ -4,6 +4,140 @@ floor = Math.floor
 
 class FractalAutomaton
     constructor: (depth) ->
+
+    rule: (state, neighbors) ->
+        n = 0
+        if @sumParents
+            n += neighbors.pnbrs
+        if @sumLocal
+            n += neighbors.nbrs
+        if @sumChildren
+            n+= neighbors.cnbrs
+        if n in @ruleArray then 1 else 0
+
+    setRule: (rule) ->
+        @sumParents = rule.sumParents
+        @sumLocal = rule.sumLocal
+        @sumChildren = rule.sumChildren
+        @ruleArray = rule.ruleArray
+        # materialize rule here for performance? how
+        # @rule = ..
+
+class window.FractalAutomaton3 extends FractalAutomaton
+    constructor: (depth) ->
+        @depth = depth
+        @grid = []
+        @neighbors = []
+        @grid[0] = [[[0]]]
+        for d in [1..depth]
+            @grid[d] = []
+            @neighbors[d] = []
+            dim = pow(2, d)
+            for i in [0..dim-1]
+                @grid[d][i] = []
+                @neighbors[d][i] = []
+                for j in [0..dim-1]
+                    row = (0 for k in [0..dim-1])
+                    @grid[d][i][j] = row
+                    @neighbors[d][i][j] = row.slice()
+
+        @sumParents = yes
+        @sumLocal = yes
+        @sumChildren = yes
+
+    randomize: (k) ->
+        for d in [1..@depth]
+            g = @grid[d]
+            dim = pow 2, d
+            for i in [0..dim-1]
+                plane = g[i]
+                for j in [0..dim-1]
+                    row = plane[j]
+                    for k in [0..dim-1]
+                        row[j]  = if rand() < k then 1 else 0    
+                
+    updateNeighbors: -> 
+        # 26 local neighbors
+        # 8 children
+        # 8 closest parents
+        for d in [1..@depth]
+            
+            dParent = d - 1
+            dimParent = pow 2, d-1
+            gParent = @grid[dParent]
+
+            gLocal = @grid[d]
+            dim = pow 2, d
+
+            if d < @depth
+                dChild = d + 1
+                gChild = @grid[dChild]
+                dimChild = pow 2, dChild
+            
+            for i in [0..dim-1] 
+                for j in [0..dim-1]
+                    for k in [0..dim-1]
+                        pnbrs = 0
+                        ip0 = floor i / 2
+                        jp0 = floor j / 2
+                        kp0 = floor k / 2
+                        ip1 = if i % 2 is 0 then ip0 - 1 else ip0 + 1
+                        jp1 = if j % 2 is 0 then jp0 - 1 else jp0 + 1
+                        kp1 = if k % 2 is 0 then kp0 - 1 else kp0 + 1
+                        ip1 = (dimParent + ip1) %% dimParent
+                        jp1 = (dimParent + jp1) %% dimParent
+                        kp1 = (dimParent + kp1) %% dimParent
+                        pnbrs += gParent[ip0][jp0][kp0] + gParent[ip1][jp0][kp0]
+                        pnbrs += gParent[ip0][jp1][kp0] + gParent[ip1][jp1][kp0]
+                        pnbrs += gParent[ip0][jp0][kp1] + gParent[ip1][jp0][kp1]
+                        pnbrs += gParent[ip0][jp1][kp1] + gParent[ip1][jp1][kp1]
+
+                    cnbrs = 0 
+                    if (d < @depth)
+                        ic0 = 2 * i
+                        jc0 = 2 * j
+                        kc0 = 2 * k
+                        cnbrs += gChild[ic0][jc0][kc0] + gChild[ic0 + 1][jc0][kc0]
+                        cnbrs += gChild[ic0][jc0 + 1][kc0] + gChild[ic0 + 1][jc0 + 1][kc0]
+                        cnbrs += gChild[ic0][jc0][kc1] + gChild[ic0 + 1][jc0][kc1]
+                        cnbrs += gChild[ic0][jc0 + 1][kc1] + gChild[ic0 + 1][jc0 + 1][kc1]
+
+                    iminus1 = (i - 1 + dim) %% dim
+                    iplus1 = (i + 1 + dim) %% dim
+                    jminus1 = (j - 1 + dim) %% dim
+                    jplus1 = (j + 1 + dim) %% dim
+                    kminus1 = (k - 1 + dim) %% dim
+                    kplus1 = (k + 1 + dim) %% dim
+                    nbrs = 0
+
+                    nbrs += gLocal[iminus1][jminus1][kminus1] + gLocal[iminus1][j][kminus1] + gLocal[iminus1][jplus1][kminus1]
+                    nbrs += gLocal[i][jminus1][kminus1] + gLocal[i][jplus1][kminus1] + gLocal[i][j][kminus1]
+                    nbrs += gLocal[iplus1][jminus1][kminus1] + gLocal[iplus1][j][kminus1] + gLocal[iplus1][jplus1][kminus1]
+
+                    nbrs += gLocal[iminus1][jminus1][k] + gLocal[iminus1][j][k] + gLocal[iminus1][jplus1][k]
+                    nbrs += gLocal[i][jminus1][k] + gLocal[i][jplus1][k]
+                    nbrs += gLocal[iplus1][jminus1][k] + gLocal[iplus1][j][k] + gLocal[iplus1][jplus1][k]
+  
+                    nbrs += gLocal[iminus1][jminus1][kplus1] + gLocal[iminus1][j][kplus1] + gLocal[iminus1][jplus1][kplus1]
+                    nbrs += gLocal[i][jminus1][kplus1] + gLocal[i][jplus1][kplus1] + gLocal[i][j][kplus1]
+                    nbrs += gLocal[iplus1][jminus1][kplus1] + gLocal[iplus1][j][kplus1] + gLocal[iplus1][jplus1][kplus1]
+
+                    @neighbors[d][i][j][k] = { 'nbrs': nbrs, 'cnbrs': cnbrs, 'pnbrs': pnbrs }
+
+    step: ->
+        for d in [1..@depth]
+            dim = pow 2, d
+            for i in [0..dim-1]
+                for j in [0..dim-1]
+                    for k in [0..dim-1]
+                        state = @grid[d][i][j][k]
+                        neighbors = @neighbors[d][i][j][k]
+                        @grid[d][i][j][k] = (@rule state, neighbors)
+
+    rule: (state, neighbors) ->
+
+class window.FractalAutomaton2 extends FractalAutomaton
+    constructor: (depth) ->
         @depth = depth
         @grid = []
         @neighbors = []
@@ -87,24 +221,6 @@ class FractalAutomaton
                     neighbors = @neighbors[d][i][j]
                     @grid[d][i][j] = (@rule state, neighbors)
 
-    rule: (state, neighbors) ->
-        n = 0
-        if @sumParents
-            n += neighbors.pnbrs
-        if @sumLocal
-            n += neighbors.nbrs
-        if @sumChildren
-            n+= neighbors.cnbrs
-        if n in @ruleArray then 1 else 0
-
-    setRule: (rule) ->
-        @sumParents = rule.sumParents
-        @sumLocal = rule.sumLocal
-        @sumChildren = rule.sumChildren
-        @ruleArray = rule.ruleArray
-        # materialize rule here for performance? how
-        # @rule = ..
-
     rulePresets:
         rule1:
             sumParents: yes
@@ -179,6 +295,9 @@ draw = (canvas, automaton) ->
             e = row[j]
             if e is 1
                 ctx.rect i * wCell, j * hCell, wCell, hCell
+ 
+f3 = new FractalAutomaton3(4)
+console.log f3
  
 width = 800
 height = 800
@@ -266,7 +385,7 @@ draw = (automaton) ->
                 graphics.drawRect i * wCell, j * hCell, wCell, hCell
 
 do render = ->
-    f = new FractalAutomaton params.depth
+    f = new FractalAutomaton2 params.depth
     f.randomize params.density
     f.updateNeighbors()
     
