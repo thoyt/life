@@ -23,7 +23,65 @@ class FractalAutomaton
         # materialize rule here for performance? how
         # @rule = ..
 
-class window.FractalAutomaton3 extends FractalAutomaton
+    rulePresets:
+        rule1:
+            sumParents: yes
+            sumLocal: yes
+            sumChildren: yes
+            ruleArray: [5, 7, 8, 10, 11, 12]
+        rule2:
+            sumParents: yes
+            sumLocal: yes
+            sumChildren: yes
+            ruleArray: [2, 6, 8, 11]
+        rule3:
+            sumParents: yes
+            sumLocal: yes
+            sumChildren: no
+            ruleArray: [4, 5, 6, 7, 8, 9, 10, 11]
+        rule4:
+            sumParents: yes
+            sumLocal: no
+            sumChildren: no
+            ruleArray: [2, 3]
+        rule5:
+            sumParents: yes
+            sumLocal: no
+            sumChildren: no
+            ruleArray: [1, 4]
+        rule6:
+            sumParents: yes
+            sumLocal: yes
+            sumChildren: yes
+            ruleArray: [5, 6, 9, 11, 12, 13, 14]
+        rule7:
+            sumParents: yes
+            sumLocal: no
+            sumChildren: no
+            ruleArray: [0, 2]
+        rule8:
+            sumParents: yes
+            sumLocal: yes
+            sumChildren: no
+            ruleArray: [0, 2, 5, 7, 8, 9, 12]
+        rule9:
+            sumParents: yes
+            sumLocal: yes
+            sumChildren: no
+            ruleArray: [0, 3, 12] 
+        rule10:
+            sumParents: yes
+            sumLocal: yes
+            sumChildren: no
+            ruleArray: [2, 6] 
+        rule11:
+            sumParents: yes
+            sumLocal: yes
+            sumChildren: no
+            ruleArray: [1, 10] 
+
+
+class @FractalAutomaton3 extends FractalAutomaton
     constructor: (depth) ->
         @depth = depth
         @grid = []
@@ -45,7 +103,7 @@ class window.FractalAutomaton3 extends FractalAutomaton
         @sumLocal = yes
         @sumChildren = yes
 
-    randomize: (k) ->
+    randomize: (p) ->
         for d in [1..@depth]
             g = @grid[d]
             dim = pow 2, d
@@ -54,7 +112,7 @@ class window.FractalAutomaton3 extends FractalAutomaton
                 for j in [0..dim-1]
                     row = plane[j]
                     for k in [0..dim-1]
-                        row[j]  = if rand() < k then 1 else 0    
+                        row[k]  = if rand() < p then 1 else 0    
                 
     updateNeighbors: -> 
         # 26 local neighbors
@@ -99,8 +157,8 @@ class window.FractalAutomaton3 extends FractalAutomaton
                         kc0 = 2 * k
                         cnbrs += gChild[ic0][jc0][kc0] + gChild[ic0 + 1][jc0][kc0]
                         cnbrs += gChild[ic0][jc0 + 1][kc0] + gChild[ic0 + 1][jc0 + 1][kc0]
-                        cnbrs += gChild[ic0][jc0][kc1] + gChild[ic0 + 1][jc0][kc1]
-                        cnbrs += gChild[ic0][jc0 + 1][kc1] + gChild[ic0 + 1][jc0 + 1][kc1]
+                        cnbrs += gChild[ic0][jc0][kc0 + 1] + gChild[ic0 + 1][jc0][kc0 + 1]
+                        cnbrs += gChild[ic0][jc0 + 1][kc0 + 1] + gChild[ic0 + 1][jc0 + 1][kc0 + 1]
 
                     iminus1 = (i - 1 + dim) %% dim
                     iplus1 = (i + 1 + dim) %% dim
@@ -134,9 +192,8 @@ class window.FractalAutomaton3 extends FractalAutomaton
                         neighbors = @neighbors[d][i][j][k]
                         @grid[d][i][j][k] = (@rule state, neighbors)
 
-    rule: (state, neighbors) ->
 
-class window.FractalAutomaton2 extends FractalAutomaton
+class @FractalAutomaton2 extends FractalAutomaton
     constructor: (depth) ->
         @depth = depth
         @grid = []
@@ -221,63 +278,6 @@ class window.FractalAutomaton2 extends FractalAutomaton
                     neighbors = @neighbors[d][i][j]
                     @grid[d][i][j] = (@rule state, neighbors)
 
-    rulePresets:
-        rule1:
-            sumParents: yes
-            sumLocal: yes
-            sumChildren: yes
-            ruleArray: [5, 7, 8, 10, 11, 12]
-        rule2:
-            sumParents: yes
-            sumLocal: yes
-            sumChildren: yes
-            ruleArray: [2, 6, 8, 11]
-        rule3:
-            sumParents: yes
-            sumLocal: yes
-            sumChildren: no
-            ruleArray: [4, 5, 6, 7, 8, 9, 10, 11]
-        rule4:
-            sumParents: yes
-            sumLocal: no
-            sumChildren: no
-            ruleArray: [2, 3]
-        rule5:
-            sumParents: yes
-            sumLocal: no
-            sumChildren: no
-            ruleArray: [1, 4]
-        rule6:
-            sumParents: yes
-            sumLocal: yes
-            sumChildren: yes
-            ruleArray: [5, 6, 9, 11, 12, 13, 14]
-        rule7:
-            sumParents: yes
-            sumLocal: no
-            sumChildren: no
-            ruleArray: [0, 2]
-        rule8:
-            sumParents: yes
-            sumLocal: yes
-            sumChildren: no
-            ruleArray: [0, 2, 5, 7, 8, 9, 12]
-        rule9:
-            sumParents: yes
-            sumLocal: yes
-            sumChildren: no
-            ruleArray: [0, 3, 12] 
-        rule10:
-            sumParents: yes
-            sumLocal: yes
-            sumChildren: no
-            ruleArray: [2, 6] 
-        rule11:
-            sumParents: yes
-            sumLocal: yes
-            sumChildren: no
-            ruleArray: [1, 10] 
-
     rule0: (state, neighbors) ->
         n = neighbors.nbrs
         if state is 1
@@ -285,32 +285,27 @@ class window.FractalAutomaton2 extends FractalAutomaton
         else
             if n in [3] then 1 else 0
 
-draw = (canvas, automaton) ->
+
+@voxels = []
+draw = (automaton) ->
     dim = pow 2, automaton.depth
-    wCell = width / dim
-    hCell = height / dim
     for i in [0..dim-1]
-        row = automaton.grid[automaton.depth][i]
+        plane = automaton.grid[automaton.depth][i]
         for j in [0..dim-1]
-            e = row[j]
-            if e is 1
-                ctx.rect i * wCell, j * hCell, wCell, hCell
- 
-f3 = new FractalAutomaton3(4)
-console.log f3
- 
-width = 800
-height = 800
-stage = new PIXI.Stage 0x66FF99
-renderer = PIXI.autoDetectRenderer width, height
-renderer.view.style.width = window.innerWidth + "px"
-renderer.view.style.height = window.innerHeight + "px"
-container = document.querySelector 'body'
-container.appendChild renderer.view
+            row = plane[j]
+            for k in [0..dim-1]
+                e = row[k]
+                if e is 1
+                    voxel = new THREE.Mesh( cubeGeo, cubeMaterial )
+                    voxel.position.x = size * i
+                    voxel.position.y = size * j
+                    voxel.position.z = size * k
+                    scene.add( voxel )
+                    voxels.push( voxel )
 
 params = 
-    density: 0.25
-    depth: 8
+    density: 0.80
+    depth: 4
     rate: 200
     rule: 'rule1'
     customRule:
@@ -368,27 +363,41 @@ f1.add(params.customRule, 'array').name('array')
 gui.add(params, 'rate', 20, 4000)
 gui.add(params, 'render')
 
-graphics = new PIXI.Graphics()
-graphics.beginFill 0xFF0000, 1.0
+width = window.innerWidth
+height = window.innerHeight
 
-stage.addChild graphics
+container = document.createElement( 'div' )
+document.body.appendChild( container )
+@scene = new THREE.Scene()
+@camera = new THREE.PerspectiveCamera( 45, width / height, 0, 10000 )
+camera.position.z = 500
 
-draw = (automaton) ->
-    dim = pow 2, automaton.depth
-    wCell = width / dim
-    hCell = height / dim
-    for i in [0..dim-1]
-        row = automaton.grid[automaton.depth][i]
-        for j in [0..dim-1]
-            e = row[j]
-            if e is 1
-                graphics.drawRect i * wCell, j * hCell, wCell, hCell
+scene.add(camera)
+
+ambientLight = new THREE.AmbientLight( 0x999999 )
+scene.add( ambientLight )
+
+directionalLight = new THREE.DirectionalLight( 0x808080, 1.0 )
+directionalLight.position.set( 0, 1, 0 )
+scene.add( directionalLight )
+
+@renderer = new THREE.WebGLRenderer( { antialiasing: true } )
+renderer.setClearColor( 0xf0f0f0 )
+renderer.setSize( width, height )
+
+#@controls = new THREE.OrbitControls(camera, renderer.domElement)
+
+container.appendChild( renderer.domElement )
+
+cubeMaterial = new THREE.MeshBasicMaterial( { color: 0xFF0066, wireframe: true, wireframeLinewidth: 1 } )
+#cubeMaterial = new THREE.MeshLambertMaterial( { color: 0xff0000, shading: THREE.FlatShading } )
+size = 5
+cubeGeo = new THREE.BoxGeometry( size, size, size )
+
+f = new FractalAutomaton3 params.depth
+f.randomize params.density
 
 do render = ->
-    f = new FractalAutomaton2 params.depth
-    f.randomize params.density
-    f.updateNeighbors()
-    
     if params.rule is 'custom' 
         rule = 
             sumParents: params.customRule.sumParents
@@ -399,12 +408,7 @@ do render = ->
         rule = f.rulePresets[params.rule]
     f.setRule rule
 
-    play = ->
-        draw f
-        f.step()
-        f.updateNeighbors() 
-        renderer.render(stage)
-        graphics.clear()
-        graphics.beginFill(0xFF0000, 1.0)
-    
-    window.interval = setInterval play, params.rate
+    draw f
+    f.step()
+    f.updateNeighbors()
+    renderer.render(scene, camera)
