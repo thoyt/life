@@ -370,7 +370,7 @@ gui.add(params, 'render')
 
 graphics = new PIXI.Graphics()
 graphics.beginFill 0xFF0000, 1.0
-
+color = 0
 stage.addChild graphics
 
 draw = (automaton) ->
@@ -404,7 +404,7 @@ do render = ->
         f.step()
         f.updateNeighbors() 
         renderer.render(stage)
-        graphics.clear()
-        graphics.beginFill(0xFF0000, 1.0)
+        color += 10
+        graphics.beginFill(color.toString(16), 1.0)
     
     window.interval = setInterval play, params.rate
